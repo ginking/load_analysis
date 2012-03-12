@@ -105,7 +105,7 @@ class LoadAnalysisLib:
 
         threshold = biggest_timestamp
         logging.info("-------------------------------------------------")
-        logging.info("threshold set at: " + str(threshold))
+        logging.info("Timestamp threshold set at: " + str(threshold))
 
         logging.debug("-------------------------------------------------")
         iterations = 0
