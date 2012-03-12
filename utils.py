@@ -7,7 +7,7 @@ class Utils:
         logging.basicConfig(level=logging_level,
             format='%(asctime)s %(levelname)s: %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S')
-
+#-------------------------------------------------------------------------------
     @staticmethod
     def get_dir_files(directory):
         logging.debug("Listing directory: %s" % (directory))
