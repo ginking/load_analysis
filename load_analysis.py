@@ -60,7 +60,7 @@ def print_file_data(title, file_data_list):
     # Prints the file data provided
 
     # only for when printing the trimmed data
-    empty_trimmed_lists_by_file_data_id = []
+    empty_trimmed_file_data_by_file_data_id = []
 
     logging.debug("-------------------------------------------------")
     logging.debug(title + " data:")
@@ -75,17 +75,17 @@ def print_file_data(title, file_data_list):
         
         if title == "trimmed":
             if timestamps_len == 0 or deltas_len == 0:
-                empty_trimmed_lists_by_file_data_id.append(\
+                empty_trimmed_file_data_by_file_data_id.append(\
                     file_data.file_id)
 
     # Report any empty lists and quit
     if title == "trimmed":
-        if len(empty_trimmed_lists_by_file_data_id) > 0:
+        if len(empty_trimmed_file_data_by_file_data_id) > 0:
             logging.error("-------------------------------------------------")
             logging.error("Trimming the original file data by " + \
                 "the timestamp threshold resulted in an empty data set " + \
                 "for files: ")
-            for file_id in empty_trimmed_lists_by_file_data_id:
+            for file_id in empty_trimmed_file_data_by_file_data_id:
                 logging.error("File: " + file_id)
             sys.exit(0)
 
@@ -110,9 +110,12 @@ def main():
 
         # discover the a common threshold in all file data, trim them based
         # off of that threshold, and print the trimmed file data
-        trimmed_lists = \
+        trimmed_file_data = \
             load_analysis_lib.trim_lists_by_common_threshold(all_file_data)
         print_file_data("trimmed", all_file_data)
+
+        # if no file data errors have force an exit, compute the math analysis
+        load_analysis_lib.compute_math(trimmed_file_data)
 
     elif options.files:
         print "plotting..." , options.files
