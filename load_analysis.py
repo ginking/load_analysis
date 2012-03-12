@@ -82,8 +82,9 @@ def print_file_data(title, file_data_list):
     if title == "trimmed":
         if len(empty_trimmed_lists_by_file_data_id) > 0:
             logging.error("-------------------------------------------------")
-            logging.error("Trimming the timestamps resulted in the " + \
-                "following empty files: ")
+            logging.error("Trimming the original file data by " + \
+                "the timestamp threshold resulted in an empty data set " + \
+                "for files: ")
             for file_id in empty_trimmed_lists_by_file_data_id:
                 logging.error("File: " + file_id)
             sys.exit(0)
