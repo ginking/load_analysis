@@ -1,4 +1,5 @@
 class FileData:
-    def __init__(self, file_key, file_data_entries):
-        self.file_key = file_key
-        self.file_data_entreis = file_data_entries
+    def __init__(self, file_id, timestamps, deltas):
+        self.file_id = file_id
+        self.timestamps = timestamps
+        self.deltas = deltas
