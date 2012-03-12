@@ -82,9 +82,6 @@ class LoadAnalysisLib:
         if not all_file_data:
             return []
 
-        #if len(all_file_data) == 1:
-        #    return all_file_data
-
         biggest_timestamp = -1
         
         # find the biggest timestamp at the head of each list - this will be our
