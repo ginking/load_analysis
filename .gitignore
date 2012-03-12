@@ -1,3 +1,5 @@
 load_analysis_vim_session
 *.sw*
-out.txt
+out*
+*.tar.gz
+*.pyc
