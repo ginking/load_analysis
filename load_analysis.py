@@ -35,7 +35,8 @@ def setup_parser_options():
             action='callback', \
             callback=parse_list_callback, \
             help="plot the std files. i.e. FILES=file1,file2,file3")
-    parser.add_option('-l', '--logging-level', help='Logging level')
+    parser.add_option('-l', '--logging-level', dest="logging_level",
+            help='Logging level')
 
     return parser
 #-------------------------------------------------------------------------------
@@ -43,6 +44,10 @@ def setup_logging(options):
 
     # set log levels if the user has asked for it
     logging_level = LOGGING_LEVELS.get(options.logging_level)
+
+    if logging_level is None:
+        logging_level = 20 # 20 -> 'info' logging level
+
     logging.basicConfig(level=logging_level,
         format='%(asctime)s %(levelname)s: %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
@@ -51,7 +56,39 @@ def setup_logging(options):
     load_analysis_lib.set_logging(logging_level)
 
 #-------------------------------------------------------------------------------
+def print_file_data(title, file_data_list):
+    # Prints the file data provided
 
+    # only for when printing the trimmed data
+    empty_trimmed_lists_by_file_data_id = []
+
+    logging.debug("-------------------------------------------------")
+    logging.debug(title + " data:")
+    logging.debug("---------------")
+    for index, file_data in enumerate(file_data_list):
+        timestamps_len = len(file_data.timestamps)
+        deltas_len = len(file_data.deltas)
+
+        logging.debug("file: " + file_data.file_id + \
+        " -- total timestamps: " + str(timestamps_len) + \
+        " -- total deltas: " + str(deltas_len))
+        
+        if title == "trimmed":
+            if timestamps_len == 0 or deltas_len == 0:
+                empty_trimmed_lists_by_file_data_id.append(\
+                    file_data.file_id)
+
+    # Report any empty lists and quit
+    if title == "trimmed":
+        if len(empty_trimmed_lists_by_file_data_id) > 0:
+            logging.error("-------------------------------------------------")
+            logging.error("Trimming the timestamps resulted in the " + \
+                "following empty files: ")
+            for file_id in empty_trimmed_lists_by_file_data_id:
+                logging.error("File: " + file_id)
+            sys.exit(0)
+
+#-------------------------------------------------------------------------------
 def main():
     # setup parser options & parse them
     parser = setup_parser_options()
@@ -66,55 +103,15 @@ def main():
         parser.error("no arguments given.")
 
     if options.compute:
+        # parse and print the original file data provided
         all_file_data = load_analysis_lib.parse_output_files(args)
+        print_file_data("original", all_file_data)
 
-        # show the original lists 
-        logging.info("-------------------------------------------------")
-        logging.info("original lists:")
-        logging.info("---------------")
-        for index, file_data in enumerate(all_file_data):
-            timestamps_len = len(file_data.timestamps)
-            deltas_len = len(file_data.deltas)
-
-            logging.info("file: " + file_data.file_id + \
-            " -- total timestamps: " + str(timestamps_len) + \
-            " -- total deltas: " + str(deltas_len))
-
-        # discover the a common threshold in all lists and trim the lists based
-        # off of that threshold
+        # discover the a common threshold in all file data, trim them based
+        # off of that threshold, and print the trimmed file data
         trimmed_lists = \
             load_analysis_lib.trim_lists_by_common_threshold(all_file_data)
-
-        # show the trimmed lists 
-        empty_trimmed_lists_by_file_data_id = []
-
-        logging.info("-------------------------------------------------")
-        logging.info("trimmed lists:")
-        logging.info("--------------")
-        for index, file_data in enumerate(trimmed_lists):
-            if index == 0:
-                file_data.timestamps = []
-                file_data.deltas = []
-            timestamps_len = len(file_data.timestamps)
-            deltas_len = len(file_data.deltas)
-
-            logging.info("file: " + file_data.file_id + \
-            " -- total timestamps: " + str(timestamps_len) + \
-            " -- total deltas: " + str(deltas_len))
-
-            if timestamps_len == 0 or deltas_len == 0:
-                empty_trimmed_lists_by_file_data_id.append(\
-                    file_data.file_id)
-
-        # Report any empty lists and quit
-        if len(empty_trimmed_lists_by_file_data_id) > 0:
-            logging.error("-------------------------------------------------")
-            logging.error("Trimming the timestamps resulted in the " + \
-                "following empty files: ")
-            for file_id in empty_trimmed_lists_by_file_data_id:
-                logging.error("File: " + file_id)
-            sys.exit(0)
-
+        print_file_data("trimmed", all_file_data)
 
     elif options.files:
         print "plotting..." , options.files
