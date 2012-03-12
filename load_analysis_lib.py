@@ -1,3 +1,4 @@
+import sys
 import logging
 import logging_colorer
 from utils import Utils
@@ -15,10 +16,14 @@ class LoadAnalysisLib:
     @staticmethod
     def parse_output_files(args):
         all_file_data = []
+        extra_headers_found = False
 
         for arg in args:
             all_files = Utils.get_dir_files(arg)
-            logging.debug("All files found: %s", all_files)
+            logging.debug("-------------------------------------------------")
+            logging.debug("All files found:")
+            logging.debug("----------------")
+            logging.debug("%s", all_files)
 
         for file_entry in all_files:
             file_data = []
@@ -29,7 +34,7 @@ class LoadAnalysisLib:
             timestamps = []
             deltas = []
 
-            extra_headers_found = -1
+            extra_headers_found_count = -1
 
             if not dirname.endswith('/'):
                 file_id = '/'.join([dirname,filename])
@@ -45,17 +50,22 @@ class LoadAnalysisLib:
                     timestamps.append(timestamp)
                     deltas.append(delta)
                 except:
-                    extra_headers_found += 1
+                    extra_headers_found_count += 1
                     #continue
 
-            if extra_headers_found > 0:
+            if extra_headers_found_count > 0:
+                extra_headers_found = True
                 logging.error(\
                     "-------------------------------------------------")
                 logging.error("%s extra header(s) found in file: %s" % \
-                        (extra_headers_found, file_id))
+                        (extra_headers_found_count, file_id))
 
             new_file_data = FileData(file_id, timestamps, deltas)
             all_file_data.append(new_file_data)
+
+        if extra_headers_found:
+            None
+            #sys.exit(0)
 
         return all_file_data
 
@@ -79,6 +89,10 @@ class LoadAnalysisLib:
         
         # find the biggest timestamp at the head of each list - this will be our
         # threshold for trimming
+        logging.debug("-------------------------------------------------")
+        logging.debug("Computing threshold")
+        logging.debug("-------------------")
+
         for file_data in all_file_data:
             file_id = file_data.file_id
             timestamps = file_data.timestamps
@@ -96,6 +110,7 @@ class LoadAnalysisLib:
         logging.info("-------------------------------------------------")
         logging.info("threshold set at: " + str(threshold))
 
+        logging.debug("-------------------------------------------------")
         iterations = 0
 
         # iterate through each list & trim out timestamp/output entries that do
