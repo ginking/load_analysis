@@ -11,7 +11,9 @@ class Utils:
 #-------------------------------------------------------------------------------
     @staticmethod
     def get_dir_files(directory):
+        logging.debug("-------------------------------------------------")
         logging.debug("Listing directory: %s" % (directory))
+        logging.debug("------------------")
         dirlist = os.listdir(directory)
         filelist = []
         for i in dirlist:
