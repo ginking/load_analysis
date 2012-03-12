@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import logging_colorer
 
 class Utils:
     def set_logging(self, logging_level):
