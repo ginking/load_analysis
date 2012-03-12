@@ -1,4 +1,5 @@
 import logging
+import logging_colorer
 from utils import Utils
 from objects import FileData
 
@@ -13,7 +14,7 @@ class LoadAnalysisLib:
 #-------------------------------------------------------------------------------
     @staticmethod
     def parse_output_files(args):
-        all_lists = []
+        all_file_data = []
 
         for arg in args:
             all_files = Utils.get_dir_files(arg)
@@ -25,6 +26,15 @@ class LoadAnalysisLib:
             dirname, filename = file_entry
 
             file_input = open("%s/%s" % (dirname, filename), "r")
+            timestamps = []
+            deltas = []
+
+            extra_headers_found = -1
+
+            if not dirname.endswith('/'):
+                file_id = '/'.join([dirname,filename])
+            else:
+                file_id = ''.join([dirname,filename])
 
             for column in file_input:
                 column_data = column.split();
@@ -32,66 +42,85 @@ class LoadAnalysisLib:
                     timestamp = int(column_data[0])
                     delta = int(column_data[1])
                     
-                    file_data.append([timestamp, delta])
+                    timestamps.append(timestamp)
+                    deltas.append(delta)
                 except:
-                    continue
+                    extra_headers_found += 1
+                    #continue
 
-            file_key = str(dirname + "/" + filename)
+            if extra_headers_found > 0:
+                logging.error(\
+                    "-------------------------------------------------")
+                logging.error("%s extra header(s) found in file: %s" % \
+                        (extra_headers_found, file_id))
 
-            new_file_data = FileData(file_key, file_data)
-            all_lists.append(new_file_data)
+            new_file_data = FileData(file_id, timestamps, deltas)
+            all_file_data.append(new_file_data)
 
-        return all_lists
+        return all_file_data
 
 #-------------------------------------------------------------------------------
     @staticmethod
-    def trim_lists_by_common_threshold(all_lists):
+    def trim_lists_by_common_threshold(all_file_data):
         # trims each individual list so that they all share timestamps of
         # equal or greater value relative to the biggest head out of all of the
         # original lists (aka the least common threshold of all of the lists)
 
-        # Requires each individual list in all_lists to be sorted in ascending order
+        # Requires each individual list in all_file_data to be sorted in
+        # ascending order
 
-        if not all_lists:
+        if not all_file_data:
             return []
 
-        if len(all_lists) == 1:
-            return all_lists
+        #if len(all_file_data) == 1:
+        #    return all_file_data
 
         biggest_timestamp = -1
-
+        
         # find the biggest timestamp at the head of each list - this will be our
         # threshold for trimming
-        for current_list in all_lists:
-            head = current_list[0]
-            timestamp, _ = head
-            logging.debug("viewing head: " + str(head))
-            if biggest_timestamp < timestamp:
-                biggest_timestamp = timestamp
-            logging.debug("current biggest timestamp: " + str(biggest_timestamp))
+        for file_data in all_file_data:
+            file_id = file_data.file_id
+            timestamps = file_data.timestamps
+            deltas = file_data.deltas
+
+            head_timestamp = timestamps[0]
+
+            logging.debug("viewing head timestamp: " + str(head_timestamp))
+            if biggest_timestamp < head_timestamp:
+                biggest_timestamp = head_timestamp
+            logging.debug("current biggest timestamp: " + \
+                    str(biggest_timestamp))
 
         threshold = biggest_timestamp
+        logging.info("-------------------------------------------------")
         logging.info("threshold set at: " + str(threshold))
 
-        all_trimmed_lists = []
         iterations = 0
 
-        # iterate through each list and trim out timestamp/output entries that do
+        # iterate through each list & trim out timestamp/output entries that do
         # not meet the threshold
-        for current_list in all_lists:
+        for file_data_index, file_data in enumerate(all_file_data):
             iterations += 1
-            trimmed_list = []
-            for entry in current_list:
-                timestamp, _ = entry
+            trimmed_timestamps = []
+            trimmed_deltas = []
+
+            file_id = file_data.file_id
+            timestamps = file_data.timestamps
+            deltas = file_data.deltas
+
+            for timestamp_index, timestamp in enumerate(timestamps):
                 iterations += 1
-                index = current_list.index(entry)
                 if timestamp >= threshold:
-                    trimmed_list = current_list[index:]
+                    trimmed_timestamps = timestamps[timestamp_index:]
+                    trimmed_deltas = deltas[timestamp_index:]
                     break
-            all_trimmed_lists.append(trimmed_list)
+            file_data.timestamps = trimmed_timestamps
+            file_data.deltas = trimmed_deltas
+            all_file_data[file_data_index] = file_data
 
         logging.debug("total iterations: " + str(iterations))
 
-        return all_trimmed_lists
+        return all_file_data
 
 #-------------------------------------------------------------------------------
