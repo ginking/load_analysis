@@ -151,10 +151,8 @@ def main():
         results = load_analysis_lib.analyze(trimmed_file_data)
         print_results(results)
         
-
     elif options.files:
         print "plotting..." , options.files
-
 
 #-------------------------------------------------------------------------------
 if __name__ == "__main__":
