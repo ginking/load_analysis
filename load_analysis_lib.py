@@ -9,7 +9,8 @@ class LoadAnalysisLib:
 #-------------------------------------------------------------------------------
     utils = Utils()
 #-------------------------------------------------------------------------------
-    def set_logging(self, logging_level):
+    @staticmethod
+    def set_logging(logging_level):
         logging.basicConfig(level=logging_level,
             format='%(asctime)s %(levelname)s: %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S')
@@ -84,12 +85,13 @@ class LoadAnalysisLib:
             return []
 
         biggest_timestamp = -1
+        biggest_timestamp_file_id = None
         
         # find the biggest timestamp at the head of each list - this will be our
         # threshold for trimming
         logging.debug("-------------------------------------------------")
-        logging.debug("Computing threshold")
-        logging.debug("-------------------")
+        logging.debug("Computing timestamp threshold amongst all file data")
+        logging.debug("---------------------------------------------------")
 
         for file_data in all_file_data:
             file_id = file_data.file_id
@@ -101,14 +103,16 @@ class LoadAnalysisLib:
             logging.debug("viewing head timestamp: " + str(head_timestamp))
             if biggest_timestamp < head_timestamp:
                 biggest_timestamp = head_timestamp
+                biggest_timestamp_file_id = file_id
             logging.debug("current biggest timestamp: " + \
                     str(biggest_timestamp))
+            logging.debug("")
 
         threshold = biggest_timestamp
         logging.info("-------------------------------------------------")
-        logging.info("Timestamp threshold set at: " + str(threshold))
+        logging.info("Timestamp threshold set at: %s by file: %s" \
+                %  (str(threshold), biggest_timestamp_file_id))
 
-        logging.debug("-------------------------------------------------")
         iterations = 0
 
         # iterate through each list & trim out timestamp/output entries that do
@@ -132,13 +136,14 @@ class LoadAnalysisLib:
             file_data.deltas = trimmed_deltas
             all_file_data[file_data_index] = file_data
 
+        logging.debug("-------------------------------------------------")
         logging.debug("total iterations: " + str(iterations))
 
         return all_file_data
 
 #-------------------------------------------------------------------------------
-    @classmethod
-    def cleanup_file_data(self, trimmed_file_data, clean_up_level):
+    @staticmethod
+    def cleanup_file_data(trimmed_file_data, clean_up_level):
         # do cleanup upto removing the +/- level of stds indicated by
         # clean_std_level
 
@@ -206,5 +211,59 @@ class LoadAnalysisLib:
         results = DataResults(analysis, mean_of_all_stds)
         
         return results
+
+#-------------------------------------------------------------------------------
+    @staticmethod
+    def print_file_data(title, file_data_list):
+        # Prints the file data provided
+
+        # only for when printing the trimmed data
+        empty_trimmed_file_data_by_file_data_id = []
+
+        logging.debug("-------------------------------------------------")
+        logging.debug(title + " data:")
+        logging.debug("---------------")
+        for index, file_data in enumerate(file_data_list):
+            timestamps_len = len(file_data.timestamps)
+            deltas_len = len(file_data.deltas)
+
+            logging.debug("file: " + file_data.file_id + \
+            " -- total timestamps: " + str(timestamps_len) + \
+            " -- total deltas: " + str(deltas_len))
+            
+            if title == "trimmed":
+                if timestamps_len == 0 or deltas_len == 0:
+                    empty_trimmed_file_data_by_file_data_id.append(\
+                        file_data.file_id)
+
+        # Report any empty lists and quit
+        if title == "trimmed":
+            if len(empty_trimmed_file_data_by_file_data_id) > 0:
+                logging.error("-------------------------------------------------")
+                logging.error("Trimming the original file data by " + \
+                    "the timestamp threshold resulted in an empty data set " + \
+                    "for files: ")
+                for file_id in empty_trimmed_file_data_by_file_data_id:
+                    logging.error("File: " + file_id)
+                sys.exit(0)
+
+#-------------------------------------------------------------------------------
+    @staticmethod
+    def print_results(results):
+        analysis = results.analysis
+        mean_of_all_stds = results.mean_of_all_stds
+        
+        logging.debug("-------------------------------------------------")
+        logging.debug("Mathematical analysis of trimmed deltas from each file:")
+        logging.debug("-----------------------------------------------------")
+
+        for file_analysis in analysis:
+            logging.debug("file: " + file_analysis.file_id + \
+            " -- mean: " + str(file_analysis.mean) + \
+            " -- std: " + str(file_analysis.std))
+
+        logging.info("-------------------------------------------------")
+        logging.info("Mean of all standard deviations of the deltas: " + \
+               str(mean_of_all_stds))
 
 #-------------------------------------------------------------------------------
