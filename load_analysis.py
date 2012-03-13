@@ -24,13 +24,16 @@ def setup_parser_options():
 
     # create parser flag options
     parser = optparse.OptionParser("usage: %prog [option [args]] ")
-    parser.add_option("-c", "--compute", action="store_true", dest="compute",
+    parser.add_option("-a", "--analyze", action="store_true", dest="analyze",
             help= \
             "discover a common timestamp threshold amongst all " \
-            "local output files, " \
-            "compute standard deviations on each output file from " \
-            "threshold onwards, " \
-            "& compute the average of the standard deviations")
+            "data in the output files, " \
+            "compute the standard deviations on the data of each output " \
+            "file from the timestamp threshold onwards, " \
+            "& compute the average of all of the standard deviations")
+    parser.add_option('-c', '--clean-up-level', dest="clean_up_level",
+            help='Clean up the original data by eliminating ' \
+                    '+/- this amount of standard deviations from the mean')
     parser.add_option("-p","--plot", dest="files", type='string',
             action='callback', \
             callback=parse_list_callback, \
@@ -90,6 +93,24 @@ def print_file_data(title, file_data_list):
             sys.exit(0)
 
 #-------------------------------------------------------------------------------
+def print_results(results):
+    analysis = results.analysis
+    mean_of_all_stds = results.mean_of_all_stds
+    
+    logging.debug("-------------------------------------------------")
+    logging.debug("Standard deviations of trimmed deltas from each file:")
+    logging.debug("-----------------------------------------------------")
+
+    for file_analysis in analysis:
+        logging.debug("file: " + file_analysis.file_id + \
+        " -- mean: " + str(file_analysis.mean) + \
+        " -- std: " + str(file_analysis.std))
+
+    logging.info("-------------------------------------------------")
+    logging.info("Mean of all standard deviations of the deltas:")
+    logging.info("----------------------------------------------")
+    logging.info(str(mean_of_all_stds))
+#-------------------------------------------------------------------------------
 def main():
     # setup parser options & parse them
     parser = setup_parser_options()
@@ -98,15 +119,26 @@ def main():
     # setup logging if requested
     setup_logging(options)
 
-    if not options.compute and not options.files:
+    if not options.analyze and not options.files:
         parser.error("no options given.")
     if len(args) < 1:
         parser.error("no arguments given.")
 
-    if options.compute:
+    if options.analyze:
         # parse and print the original file data provided
         all_file_data = load_analysis_lib.parse_output_files(args)
         print_file_data("original", all_file_data)
+
+        # clean up any outliers first
+        if options.clean_up_level:
+            logging.info("-------------------------------------------------")
+            logging.info("Cleaning up outliers in the original data ...")
+            clean_up_level = int(options.clean_up_level)
+
+            clean_trimmed_file_data = \
+                    load_analysis_lib.cleanup_file_data(all_file_data, \
+                    clean_up_level)
+            all_file_data = clean_trimmed_file_data
 
         # discover the a common threshold in all file data, trim them based
         # off of that threshold, and print the trimmed file data
@@ -114,11 +146,15 @@ def main():
             load_analysis_lib.trim_lists_by_common_threshold(all_file_data)
         print_file_data("trimmed", all_file_data)
 
-        # if no file data errors have force an exit, compute the math analysis
-        load_analysis_lib.compute_math(trimmed_file_data)
+        # if no file data errors have force an exit, analyze the trimmed file
+        # data
+        results = load_analysis_lib.analyze(trimmed_file_data)
+        print_results(results)
+        
 
     elif options.files:
         print "plotting..." , options.files
+
 
 #-------------------------------------------------------------------------------
 if __name__ == "__main__":
