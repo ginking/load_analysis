@@ -14,7 +14,6 @@ LOGGING_LEVELS = {'critical': logging.CRITICAL,
                   'debug': logging.DEBUG}
 
 utils = Utils()
-load_analysis_lib = LoadAnalysisLib()
 #-------------------------------------------------------------------------------
 def parse_list_callback(option, opt, value, parser):
       setattr(parser.values, option.dest, value.split(','))
@@ -56,60 +55,8 @@ def setup_logging(options):
         datefmt='%Y-%m-%d %H:%M:%S')
 
     utils.set_logging(logging_level)
-    load_analysis_lib.set_logging(logging_level)
+    LoadAnalysisLib.set_logging(logging_level)
 
-#-------------------------------------------------------------------------------
-def print_file_data(title, file_data_list):
-    # Prints the file data provided
-
-    # only for when printing the trimmed data
-    empty_trimmed_file_data_by_file_data_id = []
-
-    logging.debug("-------------------------------------------------")
-    logging.debug(title + " data:")
-    logging.debug("---------------")
-    for index, file_data in enumerate(file_data_list):
-        timestamps_len = len(file_data.timestamps)
-        deltas_len = len(file_data.deltas)
-
-        logging.debug("file: " + file_data.file_id + \
-        " -- total timestamps: " + str(timestamps_len) + \
-        " -- total deltas: " + str(deltas_len))
-        
-        if title == "trimmed":
-            if timestamps_len == 0 or deltas_len == 0:
-                empty_trimmed_file_data_by_file_data_id.append(\
-                    file_data.file_id)
-
-    # Report any empty lists and quit
-    if title == "trimmed":
-        if len(empty_trimmed_file_data_by_file_data_id) > 0:
-            logging.error("-------------------------------------------------")
-            logging.error("Trimming the original file data by " + \
-                "the timestamp threshold resulted in an empty data set " + \
-                "for files: ")
-            for file_id in empty_trimmed_file_data_by_file_data_id:
-                logging.error("File: " + file_id)
-            sys.exit(0)
-
-#-------------------------------------------------------------------------------
-def print_results(results):
-    analysis = results.analysis
-    mean_of_all_stds = results.mean_of_all_stds
-    
-    logging.debug("-------------------------------------------------")
-    logging.debug("Standard deviations of trimmed deltas from each file:")
-    logging.debug("-----------------------------------------------------")
-
-    for file_analysis in analysis:
-        logging.debug("file: " + file_analysis.file_id + \
-        " -- mean: " + str(file_analysis.mean) + \
-        " -- std: " + str(file_analysis.std))
-
-    logging.info("-------------------------------------------------")
-    logging.info("Mean of all standard deviations of the deltas:")
-    logging.info("----------------------------------------------")
-    logging.info(str(mean_of_all_stds))
 #-------------------------------------------------------------------------------
 def main():
     # setup parser options & parse them
@@ -126,30 +73,29 @@ def main():
 
     if options.analyze:
         # parse and print the original file data provided
-        all_file_data = load_analysis_lib.parse_output_files(args)
-        print_file_data("original", all_file_data)
+        all_file_data = LoadAnalysisLib.parse_output_files(args)
+        LoadAnalysisLib.print_file_data("original", all_file_data)
 
-        # clean up any outliers first
+        # clean up outliers if requested & reset all file data to the clean copy
         if options.clean_up_level:
             logging.info("-------------------------------------------------")
             logging.info("Cleaning up outliers in the original data ...")
             clean_up_level = int(options.clean_up_level)
 
-            clean_trimmed_file_data = \
-                    load_analysis_lib.cleanup_file_data(all_file_data, \
+            all_file_data_cleaned = \
+                    LoadAnalysisLib.cleanup_file_data(all_file_data, \
                     clean_up_level)
-            all_file_data = clean_trimmed_file_data
+            all_file_data = all_file_data_cleaned
 
-        # discover the a common threshold in all file data, trim them based
+        # discover the a common threshold in all file data, trim file data based
         # off of that threshold, and print the trimmed file data
-        trimmed_file_data = \
-            load_analysis_lib.trim_lists_by_common_threshold(all_file_data)
-        print_file_data("trimmed", all_file_data)
+        all_file_data_trimmed = \
+            LoadAnalysisLib.trim_lists_by_common_threshold(all_file_data)
+        LoadAnalysisLib.print_file_data("trimmed", all_file_data_trimmed)
 
-        # if no file data errors have force an exit, analyze the trimmed file
-        # data
-        results = load_analysis_lib.analyze(trimmed_file_data)
-        print_results(results)
+        # if no file data errors forced an exit, analyze the trimmed file data
+        results = LoadAnalysisLib.analyze(all_file_data_trimmed)
+        LoadAnalysisLib.print_results(results)
         
     elif options.files:
         print "plotting..." , options.files
