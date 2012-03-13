@@ -1,8 +1,9 @@
 import sys
+import numpy
 import logging
 import logging_colorer
 from utils import Utils
-from objects import FileData
+from objects import FileData, FileAnalysis, DataResults
 
 class LoadAnalysisLib:
 #-------------------------------------------------------------------------------
@@ -136,8 +137,74 @@ class LoadAnalysisLib:
         return all_file_data
 
 #-------------------------------------------------------------------------------
+    @classmethod
+    def cleanup_file_data(self, trimmed_file_data, clean_up_level):
+        # do cleanup upto removing the +/- level of stds indicated by
+        # clean_std_level
+
+        clean_trimmed_file_data = []
+
+        for file_data_index, file_data in enumerate(trimmed_file_data):
+
+            clean_file_data = FileData()
+            clean_timestamps = []
+            clean_deltas = []
+
+            file_id = file_data.file_id
+            timestamps = file_data.timestamps
+            deltas = file_data.deltas
+
+            mean = numpy.mean(deltas)
+            std = numpy.std(deltas)
+            
+            lower_boundary = mean - (std * clean_up_level)
+            upper_boundary = mean + (std * clean_up_level)
+
+            for delta_index, delta in enumerate(deltas):
+                if delta >= lower_boundary and delta <= upper_boundary:
+                    clean_timestamps.append(timestamps[delta_index])
+                    clean_deltas.append(deltas[delta_index])
+            
+            if clean_timestamps and clean_deltas:
+                clean_file_data.file_id = file_id
+                clean_file_data.timestamps = clean_timestamps
+                clean_file_data.deltas = clean_deltas
+                clean_trimmed_file_data.append(clean_file_data)
+
+        for i, f in enumerate(clean_trimmed_file_data):
+            timestamps_len = len(f.timestamps)
+            deltas_len = len(f.deltas)
+
+            logging.debug("cleanup-file: " + f.file_id + \
+            " -- total timestamps: " + str(timestamps_len) + \
+            " -- total deltas: " + str(deltas_len))
+
+        return clean_trimmed_file_data
+
+#-------------------------------------------------------------------------------
     @staticmethod
-    def compute_math(trimmed_lists):
-        None
+    def analyze(trimmed_file_data):
+        analysis = []
+
+        for index, file_data in enumerate(trimmed_file_data):
+            file_id = file_data.file_id
+            timestamps = file_data.timestamps
+            deltas = file_data.deltas
+
+            mean = numpy.mean(deltas)
+            std = numpy.std(deltas)
+
+            new_analysis = FileAnalysis(file_id, mean, std)
+            analysis.append(new_analysis)
+
+        temp_all_stds = []
+        for index, file_analysis in enumerate(analysis):
+            temp_all_stds.append(file_analysis.std)
+
+        mean_of_all_stds = numpy.mean(temp_all_stds)
+
+        results = DataResults(analysis, mean_of_all_stds)
+        
+        return results
 
 #-------------------------------------------------------------------------------
