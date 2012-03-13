@@ -13,7 +13,7 @@ class Utils:
     def get_dir_files(directory):
         logging.debug("-------------------------------------------------")
         logging.debug("Listing directory: %s" % (directory))
-        logging.debug("------------------")
+        logging.debug("-----------------------------")
         dirlist = os.listdir(directory)
         filelist = []
         for i in dirlist:
