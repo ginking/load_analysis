@@ -21,14 +21,7 @@ def setup_parser_options():
 
     # create parser flag options
     parser = optparse.OptionParser("usage: %prog [option [args]] ")
-    parser.add_option("-a", "--analyze", action="store_true", dest="analyze",
-            help= \
-            "discover a common timestamp threshold amongst all " \
-            "data in the output files, " \
-            "compute the standard deviations on the data of each output " \
-            "file from the timestamp threshold onwards, " \
-            "& compute the average of all of the standard deviations")
-    parser.add_option('-c', '--clean-up-level', dest="cleanup_level",
+    parser.add_option('-c', '--cleanup-level', dest="cleanup_level",
             help='Clean up the original data by eliminating ' \
                     '+/- this amount of standard deviations from the mean')
     parser.add_option("-p","--plot", \
@@ -37,7 +30,9 @@ def setup_parser_options():
             #help="plot the std files. i.e. FILES=file1,file2,file3")
             dest='plot_filename', \
             #action="store_true", \
-            help="plot the trimmed file data and save to the filename provided")
+            help="plot the trimmed file data and save to the filename " + \
+            "provided. Default extension is .png " + \
+            "(options are .png, .pdf, .svg)")
     parser.add_option('-l', '--logging-level', dest="logging_level",
             help='Logging level')
 
@@ -67,49 +62,46 @@ def main():
     # setup logging if requested
     setup_logging(options)
 
-    if not options.analyze and not options.files:
-        parser.error("no options given.")
     if len(args) < 1:
         parser.error("no arguments given.")
 
-    if options.analyze:
-        # parse and print the original file data provided
-        all_file_data = LoadAnalysisLib.parse_output_files(args)
-        LoadAnalysisLib.print_file_data("original", all_file_data)
-        LoadAnalysisLib.compute_median_std(all_file_data, "original", True)
-        
-        # clean up outliers if requested & reset all file data to the clean copy
-        if options.cleanup_level:
-            logging.info("-------------------------------------------------")
-            logging.info("Cleaning up outliers in the original data ...")
-            cleanup_level = int(options.cleanup_level)
+    # parse and print the original file data provided
+    all_file_data = LoadAnalysisLib.parse_output_files(args)
+    LoadAnalysisLib.print_file_data("original", all_file_data)
+    LoadAnalysisLib.compute_median_std(all_file_data, "original", True)
+    
+    # clean up outliers if requested & reset all file data to the clean copy
+    if options.cleanup_level:
+        logging.info("-------------------------------------------------")
+        logging.info("Cleaning up outliers in the original data ...")
+        cleanup_level = int(options.cleanup_level)
 
-            all_file_data_cleaned = \
-                    LoadAnalysisLib.cleanup_file_data(all_file_data, \
-                    cleanup_level)
-            all_file_data = all_file_data_cleaned
-            LoadAnalysisLib.compute_median_std(all_file_data, "clean", True)
+        all_file_data_cleaned = \
+                LoadAnalysisLib.cleanup_file_data(all_file_data, \
+                cleanup_level)
+        all_file_data = all_file_data_cleaned
+        LoadAnalysisLib.compute_median_std(all_file_data, "clean", True)
 
-        # discover the a common threshold in all file data, trim file data based
-        # off of that threshold, and print the trimmed file data
-        all_file_data_trimmed = \
-            LoadAnalysisLib.trim_lists_by_common_threshold(all_file_data)
-        LoadAnalysisLib.print_file_data("trimmed", all_file_data_trimmed)
+    # discover the a common threshold in all file data, trim file data based
+    # off of that threshold, and print the trimmed file data
+    all_file_data_trimmed = \
+        LoadAnalysisLib.trim_lists_by_common_threshold(all_file_data)
+    LoadAnalysisLib.print_file_data("trimmed", all_file_data_trimmed)
 
-        # if no file data errors forced an exit, find the mean of all of the
-        # standard deviations computed from each list
-        LoadAnalysisLib.compute_mean_of_all_file_data_stds(\
-                all_file_data_trimmed)
-        
-        # Plot output
-        if options.plot_filename:
-            filepath = '/'.join(['graphs', options.plot_filename])
+    # if no file data errors forced an exit, find the mean of all of the
+    # standard deviations computed from each list
+    LoadAnalysisLib.compute_mean_of_all_file_data_stds(\
+            all_file_data_trimmed)
+    
+    # Plot output
+    if options.plot_filename:
+        filepath = '/'.join(['graphs', options.plot_filename])
 
-            all_timestamps, all_deltas = \
-                    LoadAnalysisLib.prepare_plot_data(all_file_data_trimmed)
+        all_timestamps, all_deltas = \
+                LoadAnalysisLib.prepare_plot_data(all_file_data_trimmed)
 
-            Utils.plot_data(all_timestamps, all_deltas, \
-                    "Load Analysis", filepath)
+        Utils.plot_data(all_timestamps, all_deltas, \
+                "Load Analysis", filepath)
 
 #-------------------------------------------------------------------------------
 if __name__ == "__main__":
