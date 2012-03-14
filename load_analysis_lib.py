@@ -255,3 +255,15 @@ class LoadAnalysisLib:
                 sys.exit(0)
 
 #-------------------------------------------------------------------------------
+    @staticmethod
+    def prepare_plot_data(all_file_data_trimmed, filepath):
+        all_timestamps = []
+        all_deltas = []
+
+        for file_data in all_file_data_trimmed:
+            all_timestamps += file_data.timestamps
+            all_deltas += file_data.deltas
+
+        Utils.plot_data(all_timestamps, all_deltas, \
+                "Load Analysis", filepath)
+#-------------------------------------------------------------------------------
