@@ -3,8 +3,14 @@ import sys
 import logging
 import logging_colorer
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
 class Utils:
-    def set_logging(self, logging_level):
+#-------------------------------------------------------------------------------
+    @staticmethod
+    def set_logging(logging_level):
         logging.basicConfig(level=logging_level,
             format='%(asctime)s %(levelname)s: %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S')
@@ -21,3 +27,32 @@ class Utils:
                 logging.debug("Found file: %s%s", directory, i)
                 filelist.append([directory, i])
         return filelist
+#-------------------------------------------------------------------------------
+    @staticmethod
+    def plot_data(x, y, plot_title, filepath):
+        dots = []
+    
+        if len(x) == len(y):
+            for i in range(0, len(x)):
+                dot = [ x[i], y[i] ]
+                dots.append(dot)
+        else:
+            logging.error("-------------------------------------------------")
+            logging.error("Mismatch in creating dot pairs!")
+            sys.exit(0)
+
+
+        logging.info("-------------------------------------------------")
+        logging.info("Plotting data ...")
+
+        plt.xlabel("Timestamps")
+        plt.ylabel("Trimmed Deltas")
+        plt.title(plot_title)
+
+        # Create a dot plot
+        plt.plot(*zip(*dots), marker='o', color='r', ls='')
+
+        logging.info("-------------------------------------------------")
+        logging.info("Saving graph to: " + filepath) 
+        plt.savefig(filepath)
+#-------------------------------------------------------------------------------
