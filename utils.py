@@ -51,6 +51,12 @@ class Utils:
         # Create a dot plot
         plt.plot(*zip(*dots), marker='o', color='r', ls='')
 
+        # Append .png if no extension given
+        if not filepath.endswith('.png') and \
+            not filepath.endswith('.pdf') and \
+            not filepath.endswith('.svg') :
+                filepath += '.png'
+
         logging.info("-------------------------------------------------")
         logging.info("Saving graph to: " + filepath) 
         plt.savefig(filepath)
