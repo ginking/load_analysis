@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+# Company: Sandia National Labs
+# Author: Mike Metral
+# Email: mdmetra@sandia.gov
+# Date: 03/14/12
+
 import optparse
 import logging
 import logging_colorer
@@ -72,8 +77,6 @@ def main():
     
     # clean up outliers if requested & reset all file data to the clean copy
     if options.cleanup_level:
-        logging.info("-------------------------------------------------")
-        logging.info("Cleaning up outliers in the original data ...")
         cleanup_level = int(options.cleanup_level)
 
         all_file_data_cleaned = \
