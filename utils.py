@@ -1,3 +1,8 @@
+# Company: Sandia National Labs
+# Author: Mike Metral
+# Email: mdmetra@sandia.gov
+# Date: 03/14/12
+
 import os
 import sys
 import logging
