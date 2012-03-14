@@ -1,126 +1,118 @@
 #!/usr/bin/env python
 
 import optparse
+import logging
+import logging_colorer
+import sys
+from utils import Utils
+from load_analysis_lib import LoadAnalysisLib
 
-def binary_search(list, max_timestamp):
-    return None
-
-
-def compute(all_lists):
-    # Requires that each list in all_lists be sorted 
-    # independently in ascending order
-
-    # if no lists provided, return None
-    if not all_lists:
-        return None
-    
-    # get total number of lists
-    num_lists = len(all_lists)
-
-    # init the max_timestamp lower boundary as the 1st element of the 1st list
-    max_timestamp = all_lists[0][0]
-
-    # if only one list is provided, return the first element
-    if num_lists == 1:
-        min_timestamp = max_timestamp
-        return min_timestamp
-
-    # init the list to start the search as the 2nd list
-    starting_list = 1
-
-    # find the absolute max timestamp in all of the lists
-    absolute_max_timestamp = 0
-    for list in all_lists:
-        if max(list) > absolute_max_timestamp:
-            absolute_max_timestamp = max(list)
-
-    # init the min_timestamp upper boundary as the absolute_max_timestamp
-    min_timestamp = absolute_max_timestamp
-
-    # search for the max_timestamp that will exhaust a sorted list.
-    # once a list has been exhausted, the last timestamp of this list
-    # helps us deduce the min_timestamp that all of the lists share
-    # we update both the max & min timestamp until we've reached the end 
-    # of all of the lists
-    iterations = 0
-    while True:
-        # if we still have lists to search, continue
-        if starting_list < num_lists:
-            list = all_lists[starting_list]
-            for timestamp in list:
-                iterations += 1;
-                # if a timestamp is > than the max_timestamp seen so far
-                # update it, and move on to next list
-                if timestamp > max_timestamp:
-                    print "new max_timestamp: " + str(timestamp)
-                    max_timestamp = timestamp
-                    starting_list += 1
-                    break
-                # if we reach the end of a list w/o updating the max_timestamp,
-                # we store the last timestamp seen in the 
-                # list because this is possibly the min_timestamp
-                if list.index(timestamp) == (len(list) - 1):
-                    print "reached the end of a list " \
-                        "w/o finding a max_timestamp - " \
-                            "last timestamp seen: " + str(timestamp)
-
-                    # if the timestamp < min_timestamp, update it
-                    if timestamp < min_timestamp:
-                        min_timestamp = timestamp
-                        print "current min_timestamp: " + str(timestamp)
-                    # if this is our last list we force an exit of the loop
-                    if starting_list == num_lists - 1:
-                        starting_list = num_lists + 1
-                    # else, if we have more lists to search, continue
-                    else:
-                        starting_list += 1
-        # if we reached the very last list of the 1st run through of the loop
-        # start the loop over until we find the final of both the
-        # max_timestamp and the min_timestamp
-        elif starting_list == num_lists:
-            starting_list = 0
-        # if we reached a list that doesn't exist, we're done
-        elif starting_list > num_lists:
-            print "\ntotal iterations: " + str(iterations)
-            return min_timestamp
-            break;
-
+LOGGING_LEVELS = {'critical': logging.CRITICAL,
+                  'error': logging.ERROR,
+                  'warning': logging.WARNING,
+                  'info': logging.INFO,
+                  'debug': logging.DEBUG}
+#-------------------------------------------------------------------------------
 def parse_list_callback(option, opt, value, parser):
       setattr(parser.values, option.dest, value.split(','))
 
-if __name__ == "__main__":
+#-------------------------------------------------------------------------------
+def setup_parser_options():
+
+    # create parser flag options
     parser = optparse.OptionParser("usage: %prog [option [args]] ")
-    parser.add_option("-c", "--compute", action="store_true", dest="compute",
+    parser.add_option("-a", "--analyze", action="store_true", dest="analyze",
             help= \
             "discover a common timestamp threshold amongst all " \
-            "local output files, " \
-            "compute standard deviations on each output file from " \
-            "threshold onwards, " \
-            "& compute the average of the standard deviations")
-    parser.add_option("-p","--plot", dest="files", type='string', action='callback',
-            callback=parse_list_callback, \
-            help="plot the std files. i.e. FILES=file1,file2,file3")
+            "data in the output files, " \
+            "compute the standard deviations on the data of each output " \
+            "file from the timestamp threshold onwards, " \
+            "& compute the average of all of the standard deviations")
+    parser.add_option('-c', '--clean-up-level', dest="cleanup_level",
+            help='Clean up the original data by eliminating ' \
+                    '+/- this amount of standard deviations from the mean')
+    parser.add_option("-p","--plot", \
+            #action='callback', \
+            #callback=parse_list_callback, \
+            #help="plot the std files. i.e. FILES=file1,file2,file3")
+            dest='plot_filename', \
+            #action="store_true", \
+            help="plot the trimmed file data and save to the filename provided")
+    parser.add_option('-l', '--logging-level', dest="logging_level",
+            help='Logging level')
 
+    return parser
+#-------------------------------------------------------------------------------
+def setup_logging(options):
+
+    # set log levels if the user has asked for it
+    logging_level = LOGGING_LEVELS.get(options.logging_level)
+
+    if logging_level is None:
+        logging_level = 20 # 20 -> 'info' logging level
+
+    logging.basicConfig(level=logging_level,
+        format='%(asctime)s %(levelname)s: %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
+
+    Utils.set_logging(logging_level)
+    LoadAnalysisLib.set_logging(logging_level)
+
+#-------------------------------------------------------------------------------
+def main():
+    # setup parser options & parse them
+    parser = setup_parser_options()
     (options, args) = parser.parse_args()
 
-    if not options.compute and not options.files:
-        parser.error("no options and/or arguments given.")
+    # setup logging if requested
+    setup_logging(options)
 
-    if options.compute:
-        print "computing..."
+    if not options.analyze and not options.files:
+        parser.error("no options given.")
+    if len(args) < 1:
+        parser.error("no arguments given.")
 
-        a = [1,2,3,14,15,26,27,38,49,1000]
-        b = [2,3,6,7,8,11,12,14,15,16,25]
-        c = [2,3,6,7,8,11,12,14,15,16,288]
-        d = [15,16,17,18,22,28,31,32]
-        e = [3,14,18,19,20,31,46,51,55,77,132,192,198]
+    if options.analyze:
+        # parse and print the original file data provided
+        all_file_data = LoadAnalysisLib.parse_output_files(args)
+        LoadAnalysisLib.print_file_data("original", all_file_data)
+        LoadAnalysisLib.compute_median_std(all_file_data, "original", True)
+        
+        # clean up outliers if requested & reset all file data to the clean copy
+        if options.cleanup_level:
+            logging.info("-------------------------------------------------")
+            logging.info("Cleaning up outliers in the original data ...")
+            cleanup_level = int(options.cleanup_level)
 
-        #all_lists = []
-        all_lists = [a,b,c,d,e]
+            all_file_data_cleaned = \
+                    LoadAnalysisLib.cleanup_file_data(all_file_data, \
+                    cleanup_level)
+            all_file_data = all_file_data_cleaned
+            LoadAnalysisLib.compute_median_std(all_file_data, "clean", True)
 
-        min_timestamp = compute(all_lists)
+        # discover the a common threshold in all file data, trim file data based
+        # off of that threshold, and print the trimmed file data
+        all_file_data_trimmed = \
+            LoadAnalysisLib.trim_lists_by_common_threshold(all_file_data)
+        LoadAnalysisLib.print_file_data("trimmed", all_file_data_trimmed)
 
-        print "\nfinal min_timestamp: " + str(min_timestamp)
-    elif options.files:
-        print "plotting..." , options.files
+        # if no file data errors forced an exit, find the mean of all of the
+        # standard deviations computed from each list
+        LoadAnalysisLib.compute_mean_of_all_file_data_stds(\
+                all_file_data_trimmed)
+        
+        # Plot output
+        if options.plot_filename:
+            filepath = '/'.join(['graphs', options.plot_filename])
 
+            all_timestamps, all_deltas = \
+                    LoadAnalysisLib.prepare_plot_data(all_file_data_trimmed)
+
+            Utils.plot_data(all_timestamps, all_deltas, \
+                    "Load Analysis", filepath)
+
+#-------------------------------------------------------------------------------
+if __name__ == "__main__":
+    main()
+
+#-------------------------------------------------------------------------------

@@ -1,2 +1,6 @@
 load_analysis_vim_session
 *.sw*
+out*
+*.tar.gz
+*.pyc
+graphs/*
