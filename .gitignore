@@ -3,4 +3,3 @@ load_analysis_vim_session
 out*
 *.tar.gz
 *.pyc
-graphs/*
