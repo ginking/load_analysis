@@ -101,9 +101,15 @@ def main():
         LoadAnalysisLib.compute_mean_of_all_file_data_stds(\
                 all_file_data_trimmed)
         
+        # Plot output
         if options.plot_filename:
             filepath = '/'.join(['graphs', options.plot_filename])
-            LoadAnalysisLib.prepare_plot_data(all_file_data_trimmed, filepath)
+
+            all_timestamps, all_deltas = \
+                    LoadAnalysisLib.prepare_plot_data(all_file_data_trimmed)
+
+            Utils.plot_data(all_timestamps, all_deltas, \
+                    "Load Analysis", filepath)
 
 #-------------------------------------------------------------------------------
 if __name__ == "__main__":
