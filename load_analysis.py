@@ -5,6 +5,7 @@
 # Email: mdmetra@sandia.gov
 # Date: 03/14/12
 
+#-------------------------------------------------------------------------------
 import optparse
 import logging
 import logging_colorer
@@ -25,19 +26,22 @@ def parse_list_callback(option, opt, value, parser):
 def setup_parser_options():
 
     # create parser flag options
-    parser = optparse.OptionParser("usage: %prog [option [args]] ")
+    parser = optparse.OptionParser("usage: " + \
+            "%prog [options] [output_directory] " + \
+            "\n\nDescription:" + \
+            "\n------------" + \
+            "\n'%prog' processes the file data in the output " + \
+            "\ndirectory provided, trims the file data so that " + \
+            "\nonly data with a common timestamp threshold is " + \
+            "\nused in a mathematical analysis.")
     parser.add_option('-c', '--cleanup-level', dest="cleanup_level",
-            help='Clean up the original data by eliminating ' \
-                    '+/- this amount of standard deviations from the mean')
+            help='Clean up the file data by eliminating ' \
+                    '+/- this amount of standard deviations from the median')
     parser.add_option("-p","--plot", \
-            #action='callback', \
-            #callback=parse_list_callback, \
-            #help="plot the std files. i.e. FILES=file1,file2,file3")
             dest='plot_filename', \
-            #action="store_true", \
-            help="plot the trimmed file data and save to the filename " + \
-            "provided. Default extension is .png " + \
-            "(options are .png, .pdf, .svg)")
+            help="Plot the trimmed file data and save to the filename " + \
+            "provided. Default extension is .png if none provided " + \
+            "(options to be used with filename are .png, .pdf, .svg)")
     parser.add_option('-l', '--logging-level', dest="logging_level",
             help='Logging level')
 
