@@ -256,7 +256,7 @@ class LoadAnalysisLib:
 
 #-------------------------------------------------------------------------------
     @staticmethod
-    def prepare_plot_data(all_file_data_trimmed, filepath):
+    def prepare_plot_data(all_file_data_trimmed):
         all_timestamps = []
         all_deltas = []
 
@@ -264,6 +264,5 @@ class LoadAnalysisLib:
             all_timestamps += file_data.timestamps
             all_deltas += file_data.deltas
 
-        Utils.plot_data(all_timestamps, all_deltas, \
-                "Load Analysis", filepath)
+        return all_timestamps, all_deltas
 #-------------------------------------------------------------------------------
