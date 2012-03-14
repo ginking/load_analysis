@@ -19,37 +19,36 @@ LOGGING_LEVELS = {'critical': logging.CRITICAL,
                   'info': logging.INFO,
                   'debug': logging.DEBUG}
 #-------------------------------------------------------------------------------
-def parse_list_callback(option, opt, value, parser):
-      setattr(parser.values, option.dest, value.split(','))
-
-#-------------------------------------------------------------------------------
 def setup_parser_options():
+    # Create parser flag options
 
-    # create parser flag options
     parser = optparse.OptionParser("usage: " + \
-            "%prog [options] [output_directory] " + \
+            "%prog [options] [data_dir(s)] " + \
             "\n\nDescription:" + \
             "\n------------" + \
-            "\n'%prog' processes the file data in the output " + \
-            "\ndirectory provided, trims the file data so that " + \
+            "\n'%prog' processes the file data in the data " + \
+            "\ndirector(y/ies) provided & trims the file data so that " + \
             "\nonly data with a common timestamp threshold is " + \
-            "\nused in a mathematical analysis.")
+            "\nused in a mathematical analysis." + \
+            "\n\nFor help, use %prog -h or %prog --help")
     parser.add_option('-c', '--cleanup-level', dest="cleanup_level",
             help='Clean up the file data by eliminating ' \
                     '+/- this amount of standard deviations from the median')
     parser.add_option("-p","--plot", \
             dest='plot_filename', \
             help="Plot the trimmed file data and save to the filename " + \
-            "provided. Default extension is .png if none provided " + \
-            "(options to be used with filename are .png, .pdf, .svg)")
+            "provided. Default extension is .png if none provided. " + \
+            "Options to be used with filename: .png, .pdf, .svg")
     parser.add_option('-l', '--logging-level', dest="logging_level",
-            help='Logging level')
+            help="Logging level to use. Default level is set to 'info'. " + \
+                "Options (ascendingly inclusive): " + \
+                "debug, info, warning, error, critical")
 
     return parser
 #-------------------------------------------------------------------------------
 def setup_logging(options):
+    # Set log levels if the user has asked for it
 
-    # set log levels if the user has asked for it
     logging_level = LOGGING_LEVELS.get(options.logging_level)
 
     if logging_level is None:
@@ -64,51 +63,73 @@ def setup_logging(options):
 
 #-------------------------------------------------------------------------------
 def main():
-    # setup parser options & parse them
+
+    # Setup parser options & parse them
     parser = setup_parser_options()
     (options, args) = parser.parse_args()
 
-    # setup logging if requested
+    # Setup logging if requested
     setup_logging(options)
 
+    # Check for arguments, in this case, directories containing file data
     if len(args) < 1:
         parser.error("no arguments given.")
 
-    # parse and print the original file data provided
-    all_file_data = LoadAnalysisLib.parse_output_files(args)
-    LoadAnalysisLib.print_file_data("original", all_file_data)
-    LoadAnalysisLib.compute_median_std(all_file_data, "original", True)
+    # Parse out all of the file data provided
+    all_file_data = LoadAnalysisLib.parse_data_files(args)
+
+    # Print debug info about all of the original file data, if requested
+    if options.logging_level == 'debug':
+        LoadAnalysisLib.log_debug_file_data("original", all_file_data)
+
+    # Analyze all of the original file data and log it
+    title, log = "original", True
+    LoadAnalysisLib.analyze(all_file_data, title, log)
     
-    # clean up outliers if requested & reset all file data to the clean copy
+    # Clean up outliers if requested & reset the file data to be the clean data
     if options.cleanup_level:
         cleanup_level = int(options.cleanup_level)
 
+        # Clean the original file data
         all_file_data_cleaned = \
                 LoadAnalysisLib.cleanup_file_data(all_file_data, \
                 cleanup_level)
-        all_file_data = all_file_data_cleaned
-        LoadAnalysisLib.compute_median_std(all_file_data, "clean", True)
 
-    # discover the a common threshold in all file data, trim file data based
-    # off of that threshold, and print the trimmed file data
+        # Reset the original file data to now be the clean file data
+        all_file_data = all_file_data_cleaned
+
+        # Analyze all of the clean file data and log it
+        title, log = "clean", True
+        LoadAnalysisLib.analyze(all_file_data, title, log)
+
+    # Trim the file data (original or clean) based off of a shared timestamp
+    # threshold
     all_file_data_trimmed = \
         LoadAnalysisLib.trim_lists_by_common_threshold(all_file_data)
-    LoadAnalysisLib.print_file_data("trimmed", all_file_data_trimmed)
 
-    # if no file data errors forced an exit, find the mean of all of the
-    # standard deviations computed from each list
-    LoadAnalysisLib.compute_mean_of_all_file_data_stds(\
+    # Print debug info about the trimmed file data (original or clean),
+    # if requested
+    if options.logging_level == 'debug':
+        LoadAnalysisLib.log_debug_file_data("trimmed", all_file_data_trimmed)
+
+    # Find the mean of all delta standard deviations found (from the trimmed
+    # file data)
+    LoadAnalysisLib.compute_mean_of_file_data_stds(\
             all_file_data_trimmed)
     
-    # Plot output
+    # Plot the trimmed file data (original or clean)
     if options.plot_filename:
         filepath = '/'.join(['graphs', options.plot_filename])
 
-        all_timestamps, all_deltas = \
-                LoadAnalysisLib.prepare_plot_data(all_file_data_trimmed)
+        # Collect all of the timestamps and deltas
+        all_timestamps = \
+            LoadAnalysisLib.collect_all_timestamps(all_file_data_trimmed)
+        all_deltas = \
+            LoadAnalysisLib.collect_all_deltas(all_file_data_trimmed)
 
-        Utils.plot_data(all_timestamps, all_deltas, \
-                "Load Analysis", filepath)
+        # Plot the data
+        plot_title = "Load Analysis"
+        Utils.plot_data(all_timestamps, all_deltas, plot_title, filepath)
 
 #-------------------------------------------------------------------------------
 if __name__ == "__main__":
