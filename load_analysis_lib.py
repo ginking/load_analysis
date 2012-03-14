@@ -3,7 +3,7 @@ import numpy
 import logging
 import logging_colorer
 from utils import Utils
-from objects import FileData, FileAnalysis, DataResults
+from objects import FileData
 
 class LoadAnalysisLib:
 #-------------------------------------------------------------------------------
@@ -89,9 +89,8 @@ class LoadAnalysisLib:
         
         # find the biggest timestamp at the head of each list - this will be our
         # threshold for trimming
-        logging.debug("-------------------------------------------------")
-        logging.debug("Computing timestamp threshold amongst all file data")
-        logging.debug("---------------------------------------------------")
+        logging.info("-------------------------------------------------")
+        logging.info("Computing timestamp threshold amongst all file data ...")
 
         for file_data in all_file_data:
             file_id = file_data.file_id
@@ -143,13 +142,37 @@ class LoadAnalysisLib:
 
 #-------------------------------------------------------------------------------
     @staticmethod
-    def cleanup_file_data(trimmed_file_data, clean_up_level):
+    def compute_median_std(file_data_list, dataset_name, log=False):
+        all_deltas = []
+
+        for file_data_index, file_data in enumerate(file_data_list):
+            deltas = file_data.deltas
+            all_deltas += deltas
+
+        median = numpy.median(all_deltas)
+        std = numpy.std(all_deltas)
+
+        if log:
+            logging.info("-------------------------------------------------")
+            logging.info("Analysis - %s data: median = %s, std = %s" \
+                    % (dataset_name, str(median), str(std)))
+
+        return median, std
+#-------------------------------------------------------------------------------
+    @staticmethod
+    def cleanup_file_data(all_file_data, cleanup_level):
         # do cleanup upto removing the +/- level of stds indicated by
         # clean_std_level
 
-        clean_trimmed_file_data = []
+        median, std = \
+            LoadAnalysisLib.compute_median_std(all_file_data, "original")
 
-        for file_data_index, file_data in enumerate(trimmed_file_data):
+        lower_boundary = median - (std * cleanup_level)
+        upper_boundary = median + (std * cleanup_level)
+
+        all_file_data_cleaned = []
+
+        for file_data_index, file_data in enumerate(all_file_data):
 
             clean_file_data = FileData()
             clean_timestamps = []
@@ -158,12 +181,6 @@ class LoadAnalysisLib:
             file_id = file_data.file_id
             timestamps = file_data.timestamps
             deltas = file_data.deltas
-
-            mean = numpy.mean(deltas)
-            std = numpy.std(deltas)
-            
-            lower_boundary = mean - (std * clean_up_level)
-            upper_boundary = mean + (std * clean_up_level)
 
             for delta_index, delta in enumerate(deltas):
                 if delta >= lower_boundary and delta <= upper_boundary:
@@ -174,9 +191,9 @@ class LoadAnalysisLib:
                 clean_file_data.file_id = file_id
                 clean_file_data.timestamps = clean_timestamps
                 clean_file_data.deltas = clean_deltas
-                clean_trimmed_file_data.append(clean_file_data)
+                all_file_data_cleaned.append(clean_file_data)
 
-        for i, f in enumerate(clean_trimmed_file_data):
+        for i, f in enumerate(all_file_data_cleaned):
             timestamps_len = len(f.timestamps)
             deltas_len = len(f.deltas)
 
@@ -184,34 +201,24 @@ class LoadAnalysisLib:
             " -- total timestamps: " + str(timestamps_len) + \
             " -- total deltas: " + str(deltas_len))
 
-        return clean_trimmed_file_data
+        return all_file_data_cleaned
 
 #-------------------------------------------------------------------------------
     @staticmethod
-    def analyze(trimmed_file_data):
-        analysis = []
+    def compute_mean_of_all_file_data_stds(trimmed_file_data):
+        all_stds = []
 
         for index, file_data in enumerate(trimmed_file_data):
-            file_id = file_data.file_id
-            timestamps = file_data.timestamps
             deltas = file_data.deltas
-
-            mean = numpy.mean(deltas)
             std = numpy.std(deltas)
 
-            new_analysis = FileAnalysis(file_id, mean, std)
-            analysis.append(new_analysis)
+            all_stds.append(std)
 
-        temp_all_stds = []
-        for index, file_analysis in enumerate(analysis):
-            temp_all_stds.append(file_analysis.std)
-
-        mean_of_all_stds = numpy.mean(temp_all_stds)
-
-        results = DataResults(analysis, mean_of_all_stds)
+        mean_of_all_stds = numpy.mean(all_stds)
+        logging.info("-------------------------------------------------")
+        logging.info("Mean of all standard deviations of the deltas: " + \
+               str(mean_of_all_stds))
         
-        return results
-
 #-------------------------------------------------------------------------------
     @staticmethod
     def print_file_data(title, file_data_list):
@@ -239,31 +246,12 @@ class LoadAnalysisLib:
         # Report any empty lists and quit
         if title == "trimmed":
             if len(empty_trimmed_file_data_by_file_data_id) > 0:
-                logging.error("-------------------------------------------------")
+                logging.error("-----------------------------------------------")
                 logging.error("Trimming the original file data by " + \
                     "the timestamp threshold resulted in an empty data set " + \
                     "for files: ")
                 for file_id in empty_trimmed_file_data_by_file_data_id:
                     logging.error("File: " + file_id)
                 sys.exit(0)
-
-#-------------------------------------------------------------------------------
-    @staticmethod
-    def print_results(results):
-        analysis = results.analysis
-        mean_of_all_stds = results.mean_of_all_stds
-        
-        logging.debug("-------------------------------------------------")
-        logging.debug("Mathematical analysis of trimmed deltas from each file:")
-        logging.debug("-----------------------------------------------------")
-
-        for file_analysis in analysis:
-            logging.debug("file: " + file_analysis.file_id + \
-            " -- mean: " + str(file_analysis.mean) + \
-            " -- std: " + str(file_analysis.std))
-
-        logging.info("-------------------------------------------------")
-        logging.info("Mean of all standard deviations of the deltas: " + \
-               str(mean_of_all_stds))
 
 #-------------------------------------------------------------------------------
