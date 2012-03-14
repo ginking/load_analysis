@@ -41,7 +41,6 @@ class Utils:
             logging.error("Mismatch in creating dot pairs!")
             sys.exit(0)
 
-
         logging.info("-------------------------------------------------")
         logging.info("Plotting data ...")
 
