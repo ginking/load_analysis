@@ -16,6 +16,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 class Utils:
+    filepath = None
 #-------------------------------------------------------------------------------
     @staticmethod
     def set_logging(logging_level):
@@ -24,6 +25,7 @@ class Utils:
         logging.basicConfig(level=logging_level,
             format='%(asctime)s %(levelname)s: %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S')
+
 #-------------------------------------------------------------------------------
     @staticmethod
     def get_dir_listing(directory):
@@ -42,6 +44,7 @@ class Utils:
                 filelist.append([directory, i])
 
         return filelist
+
 #-------------------------------------------------------------------------------
     @staticmethod
     def fix_filepath(dirname, filename):
@@ -56,6 +59,14 @@ class Utils:
             filepath = ''.join([dirname,filename])
 
         return filepath
+
+#-------------------------------------------------------------------------------
+    @staticmethod
+    def write_to_file(data):
+        f = open(Utils.filepath, 'a+')
+        f.write(data)
+        f.close()
+
 #-------------------------------------------------------------------------------
     @staticmethod
     def plot_data(x_axis, y_axis, plot_title, filepath):
@@ -91,4 +102,5 @@ class Utils:
         logging.info("-------------------------------------------------")
         logging.info("Saving graph to: " + filepath) 
         plt.savefig(filepath)
+
 #-------------------------------------------------------------------------------
