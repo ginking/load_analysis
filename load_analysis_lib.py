@@ -1,3 +1,8 @@
+# Company: Sandia National Labs
+# Author: Mike Metral
+# Email: mdmetra@sandia.gov
+# Date: 03/14/12
+
 import sys
 import numpy
 import logging
@@ -109,7 +114,7 @@ class LoadAnalysisLib:
 
         threshold = biggest_timestamp
         logging.info("-------------------------------------------------")
-        logging.info("Timestamp threshold set at: %s by file: %s" \
+        logging.info("Timestamp threshold set at: (%s) by file: (%s)" \
                 %  (str(threshold), biggest_timestamp_file_id))
 
         iterations = 0
@@ -154,7 +159,7 @@ class LoadAnalysisLib:
 
         if log:
             logging.info("-------------------------------------------------")
-            logging.info("Analysis - %s data: median = %s, std = %s" \
+            logging.info("Analysis - (%s) data: median = (%s), std = (%s)" \
                     % (dataset_name, str(median), str(std)))
 
         return median, std
@@ -163,6 +168,10 @@ class LoadAnalysisLib:
     def cleanup_file_data(all_file_data, cleanup_level):
         # do cleanup upto removing the +/- level of stds indicated by
         # clean_std_level
+        logging.info("-------------------------------------------------")
+        logging.info("Cleaning up outliers in the data that " + \
+                "are past +/- (%s) standard deviation(s) ..." % \
+                str(cleanup_level))
 
         median, std = \
             LoadAnalysisLib.compute_median_std(all_file_data, "original")
@@ -216,7 +225,7 @@ class LoadAnalysisLib:
 
         mean_of_all_stds = numpy.mean(all_stds)
         logging.info("-------------------------------------------------")
-        logging.info("Mean of all standard deviations of the deltas: " + \
+        logging.info("Mean of all standard deviations of the deltas: (%s)" % \
                str(mean_of_all_stds))
         
 #-------------------------------------------------------------------------------
