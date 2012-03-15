@@ -36,9 +36,16 @@ def setup_parser_options():
                     '+/- this amount of standard deviations from the median')
     parser.add_option("-p","--plot", \
             dest='plot_filename', \
-            help="Plot the trimmed file data and save to the filename " + \
-            "provided. Default extension is .png if none provided. " + \
-            "Options to be used with filename: .png, .pdf, .svg")
+            help="Plot the trimmed file data and save it to the " + \
+            "graphs/ directory using the " + \
+            "specified filename. Default extension is .png, if none " + \
+            "provided. Options to be used with filename: .png, .pdf, .svg")
+    parser.add_option("-o","--output-to-file", \
+            dest='output_to_file', \
+            help="Write output to the results/ directory using the " + \
+            "specified filename. *Note: output is done in an appended " + \
+            "mode per write, so remove files beforehand, " + \
+            "if you plan on reusing the same filename.")
     parser.add_option('-l', '--logging-level', dest="logging_level",
             help="Logging level to use. Default level is set to 'info'. " + \
                 "Options (ascendingly inclusive): " + \
@@ -74,6 +81,11 @@ def main():
     # Check for arguments, in this case, directories containing file data
     if len(args) < 1:
         parser.error("no arguments given.")
+
+    # Setup the output file to write the results to, if requested
+    if options.output_to_file:
+        LoadAnalysisLib.output_to_file = True
+        Utils.filepath = 'results/' + options.output_to_file
 
     # Parse out all of the file data provided
     all_file_data = LoadAnalysisLib.parse_data_files(args)
