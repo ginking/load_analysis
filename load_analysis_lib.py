@@ -75,8 +75,8 @@ class LoadAnalysisLib:
 
             if extra_headers_found:
                 # Exit as there is an error with the data collectected
-                None
-                #sys.exit(0)
+                #None
+                sys.exit(0)
 
         return all_file_data
 
