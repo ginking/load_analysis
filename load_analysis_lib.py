@@ -75,7 +75,10 @@ class LoadAnalysisLib:
 
             if extra_headers_found:
                 # Exit as there is an error with the data collectected
-                None
+
+                logging.error(LoadAnalysisLib.line_break)
+                logging.error("Fix the error with the extra header(s) " + \
+                        "before you can proceed")
                 #sys.exit(0)
 
         return all_file_data
