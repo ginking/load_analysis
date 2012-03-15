@@ -11,6 +11,8 @@ from utils import Utils
 from objects import FileData
 
 class LoadAnalysisLib:
+    line_break = "-------------------------------------------------"
+    output_to_file = False
 #-------------------------------------------------------------------------------
     @staticmethod
     def set_logging(logging_level):
@@ -30,7 +32,7 @@ class LoadAnalysisLib:
         # Get the file listing for each directory
         for arg in args:
             dir_listing = Utils.get_dir_listing(arg)
-            logging.debug("-------------------------------------------------")
+            logging.debug(LoadAnalysisLib.line_break)
             logging.debug("All files found:")
             logging.debug("----------------")
             logging.debug("%s", dir_listing)
@@ -64,8 +66,7 @@ class LoadAnalysisLib:
                 # Report if extra headers are found aside from the initial one
                 if total_headers_found > 1:
                     extra_headers_found = True
-                    logging.error(\
-                        "-------------------------------------------------")
+                    logging.error(LoadAnalysisLib.line_break)
                     logging.error("%s extra header(s) found in file: %s" % \
                             (total_headers_found-1, file_id))
 
@@ -91,8 +92,9 @@ class LoadAnalysisLib:
         biggest_timestamp = -1
         biggest_timestamp_file_id = None
         
-        logging.info("-------------------------------------------------")
-        logging.info("Computing timestamp threshold amongst file data ...")
+        logging.info(LoadAnalysisLib.line_break)
+        msg = "Computing timestamp threshold amongst file data ..."
+        logging.info(msg)
 
         # Find the biggest timestamp at the head of each list - this will be our
         # threshold
@@ -129,9 +131,11 @@ class LoadAnalysisLib:
         threshold, threshold_file_id = \
                 LoadAnalysisLib.compute_timestamp_threshold(all_file_data)
 
-        logging.info("-------------------------------------------------")
-        logging.info("Timestamp threshold set at: (%s) by file: (%s)" \
-                %  (str(threshold), threshold_file_id))
+        logging.info(LoadAnalysisLib.line_break)
+        msg = "Timestamp threshold set at: %s by file: %s" \
+                %  (str(threshold), threshold_file_id)
+        logging.info(msg)
+        if LoadAnalysisLib.output_to_file: Utils.write_to_file("\n\n" + msg)
 
         debug_iterations = 0
 
@@ -165,12 +169,12 @@ class LoadAnalysisLib:
                 file_data.deltas = trimmed_deltas
                 all_file_data[file_data_index] = file_data
 
-        logging.debug("-------------------------------------------------")
+        logging.debug(LoadAnalysisLib.line_break)
         logging.debug("total debug iterations: " + str(debug_iterations))
 
         # Report any empty lists and quit
         if len(empty_trimmed_file_data_by_file_data_id) > 0:
-            logging.error("-----------------------------------------------")
+            logging.error(LoadAnalysisLib.line_break)
             logging.error("Trimming the file data by " + \
                 "the timestamp threshold resulted in an empty data set " + \
                 "for files: ")
@@ -220,9 +224,16 @@ class LoadAnalysisLib:
         std = numpy.std(all_deltas)
 
         if log:
-            logging.info("-------------------------------------------------")
-            logging.info("Analysis - (%s) data: median = (%s), std = (%s)" \
-                    % (dataset_name, str(median), str(std)))
+            logging.info(LoadAnalysisLib.line_break)
+            msg = "Analysis - (%s) data: median = %s, std = %s" \
+                    % (dataset_name, str(median), str(std))
+            logging.info(msg)
+
+            if LoadAnalysisLib.output_to_file:
+                if dataset_name == "original":
+                    Utils.write_to_file("\n" + msg)
+                else:
+                    Utils.write_to_file("\n\n" + msg)
 
         return median, std
 #-------------------------------------------------------------------------------
@@ -231,10 +242,12 @@ class LoadAnalysisLib:
         # Clean up the file data by removing any data values that are not +/-
         # the level of stds indicated by cleanup_level
 
-        logging.info("-------------------------------------------------")
-        logging.info("Cleaning up outliers in the data that " + \
+        logging.info(LoadAnalysisLib.line_break)
+        msg = "Cleaning up outliers in the data that " + \
                 "are not within +/- (%s) standard deviation(s) ..." % \
-                str(cleanup_level))
+                str(cleanup_level)
+        logging.info(msg)
+        if LoadAnalysisLib.output_to_file: Utils.write_to_file("\n\n" + msg)
 
         # Analyze data & set up cleaning boundaries
         median, std = LoadAnalysisLib.analyze(all_file_data, "original")
@@ -293,16 +306,18 @@ class LoadAnalysisLib:
             all_stds.append(std)
 
         mean_of_all_stds = numpy.mean(all_stds)
-        logging.info("-------------------------------------------------")
-        logging.info("Mean of all delta standard deviations found " + \
-                "(from all file data): (%s)" % str(mean_of_all_stds))
+        logging.info(LoadAnalysisLib.line_break)
+        msg = "Mean of all delta standard deviations found " + \
+                "(from all file data): %s" % str(mean_of_all_stds)
+        logging.info(msg)
+        if LoadAnalysisLib.output_to_file: Utils.write_to_file("\n\n" + msg)
         
 #-------------------------------------------------------------------------------
     @staticmethod
     def log_debug_file_data(title, file_data_list):
         # Prints the file data provided
 
-        logging.debug("-------------------------------------------------")
+        logging.debug(LoadAnalysisLib.line_break)
         logging.debug(title + " data:")
         logging.debug("---------------")
 
