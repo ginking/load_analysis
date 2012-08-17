@@ -1,8 +1,3 @@
-# Company: Sandia National Labs
-# Author: Mike Metral
-# Email: mdmetra@sandia.gov
-# Date: 03/14/12
-
 class FileData:
     # Class to store the data from each file input
 
